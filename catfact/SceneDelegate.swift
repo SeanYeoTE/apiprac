@@ -1,4 +1,4 @@
-//
+
 //  SceneDelegate.swift
 //  catfact
 //
@@ -18,7 +18,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CatViewController()
+        let cats = CatViewController()
+        cats.tabBarItem = UITabBarItem(title: "Cats", image: UIImage(systemName: "pawprint"), tag: 0)
+
+        let users = UINavigationController(rootViewController: UsersViewController())
+        users.tabBarItem = UITabBarItem(title: "Users", image: UIImage(systemName: "person.2"), tag: 1)
+
+        let tabs = UITabBarController()
+        tabs.viewControllers = [cats, users]
+        window?.rootViewController = tabs
         window?.makeKeyAndVisible()
     }
 
