@@ -10,6 +10,7 @@ struct SimplifiedUser: Decodable {
     let fullName: String
     let email: String
     let age: Int
+    let gender: String
     let profileImage: String
     let city: String
     let state: String
@@ -20,6 +21,7 @@ struct SimplifiedUser: Decodable {
         case lastName
         case email
         case age
+        case gender
         case profileImage = "image"
         case address
     }
@@ -40,6 +42,7 @@ struct SimplifiedUser: Decodable {
 
         self.email = try container.decode(String.self, forKey: .email)
         self.age = try container.decode(Int.self, forKey: .age)
+        self.gender = try container.decode(String.self, forKey: .gender)
         self.profileImage = try container.decode(String.self, forKey: .profileImage)
 
         let addressContainer = try container.nestedContainer(
@@ -62,17 +65,37 @@ enum UsersAPIError: Error {
     case badStatus(Int)
 }
 
-enum UsersAPI {
-    private static let usersURL = URL(string: "https://dummyjson.com/users?limit=10")!
+struct UsersPage {
+    let users: [SimplifiedUser]
+    let total: Int
+}
 
-    static func fetchUsers() async throws -> [SimplifiedUser] {
-        let (data, response) = try await URLSession.shared.data(from: usersURL)
+enum UsersAPI {
+    static let pageSize = 10
+
+    static func fetchUsers(matching query: String = "", skip: Int = 0) async throws -> UsersPage {
+        let (data, response) = try await URLSession.shared.data(from: usersURL(query: query, skip: skip))
         try validate(response)
 
         struct Response: Decodable {
             let users: [SimplifiedUser]
+            let total: Int
         }
-        return try JSONDecoder().decode(Response.self, from: data).users
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        return UsersPage(users: decoded.users, total: decoded.total)
+    }
+
+    private static func usersURL(query: String, skip: Int) -> URL {
+        let path = query.isEmpty ? "users" : "users/search"
+        var components = URLComponents(string: "https://dummyjson.com/\(path)")!
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(pageSize)),
+            URLQueryItem(name: "skip", value: String(skip))
+        ]
+        if !query.isEmpty {
+            components.queryItems?.append(URLQueryItem(name: "q", value: query))
+        }
+        return components.url!
     }
 
     private static func validate(_ response: URLResponse) throws {
